@@ -6,7 +6,10 @@ import openai
 from dotenv import load_dotenv
 import os
 
-load_dotenv() # you need to set OPENAI_API_KEY in .env
+
+load_dotenv()  # you need to set OPENAI_API_KEY in .env
+# print os.env
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 hostName = "localhost"
 serverPort = 3000
@@ -16,6 +19,7 @@ serverPort = 3000
 filename = "index.html"
 with open(filename) as f:
     content = f.readlines()
+
 
 # Show the file contents line by line.
 # We added the comma to print single newlines and not double newlines.
@@ -34,7 +38,7 @@ def chatGpt(message):
                 "content": "I am a CS major at RIT"},  # basically, paste your resume here, might need "This is my resume:" in front
             {"role": "user", "content": "I want you to answer questions as if you were me, using the information in my resume."},
             {"role": "user",
-                "content": "Why should I hire you to work on AI language models?"},
+                "content": message},
         ]
     )
     print(response)
@@ -46,10 +50,28 @@ class MyServer(BaseHTTPRequestHandler):
     def do_POST(self):
         self.send_response(200)
         # parsed_url = urlparse(self.path)
+        print("POST request received")
         print(self)
 
+    # render a page :)
+    def renderHTML(self, file):
+        with open("./"+file) as f:
+            content = f.readlines()
+
+        # headers
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        # page content
+        for line in content:
+            self.wfile.write(bytes(line, "utf-8"))
+
+        # /html
+        self.wfile.write(bytes("</body></html>", "utf-8"))
+
     def do_GET(self):
-        if self.path.find("question=") != -1: # "submit" button adds to query string
+        if self.path.find("question=") != -1:  # "submit" button adds to query string
             print("Button clicked")
             # grab the question from the url
             parsed_url = urlparse(self.path)
@@ -67,29 +89,28 @@ class MyServer(BaseHTTPRequestHandler):
                 self.wfile.write(bytes(line, "utf-8"))
 
             self.wfile.write(bytes("<p>Question: %s</p>" % question, "utf-8"))
-            self.wfile.write(bytes("<br>Response: %s" % res, "utf-8"))
+            self.wfile.write(bytes("<br>Response: %s" %
+                             res.replace("%3F", "?"), "utf-8"))
             self.wfile.write(bytes("</div", "utf-8"))
             self.wfile.write(bytes("</body></html>", "utf-8"))
+
         elif self.path == "/":
+            print("index"+".html")
+            print('test')
+            self.renderHTML("index")
 
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
+        elif os.path.exists(self.path.replace("/", "").replace(".html","")+".html"):
+            self.renderHTML(self.path.replace("/", "").replace(".html","")+".html")
 
-            # use this to return link to mp3 file
-            # self.send_header('Content-type', 'application/json')
-
-            self.end_headers()
-
-            for line in content:
-                self.wfile.write(bytes(line, "utf-8"))
-            self.wfile.write(bytes("</body></html>", "utf-8"))
         else:
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html')
             self.end_headers()
-            for line in content:
-                self.wfile.write(bytes(line, "utf-8"))
-                self.wfile.write(bytes("</body></html>", "utf-8"))
+            self.wfile.write(
+                bytes("<html><head><title>404</title></head>", "utf-8"))
+            self.wfile.write(bytes("<body><p>404 Not Found</p>", "utf-8"))
+            self.wfile.write(
+                bytes("<p>The resource could not be found.</p></body></html>", "utf-8"))
 
 
 if __name__ == "__main__":
