@@ -89,7 +89,7 @@ class MyServer(BaseHTTPRequestHandler):
                 self.wfile.write(bytes(line, "utf-8"))
 
             self.wfile.write(bytes("<p>Question: %s</p>" % question, "utf-8"))
-            self.wfile.write(bytes("<br>Response: %s" %
+            self.wfile.write(bytes("<br><marquee>Response: %s</marquee>" %
                              res.replace("%3F", "?"), "utf-8"))
             self.wfile.write(bytes("</div", "utf-8"))
             self.wfile.write(bytes("</body></html>", "utf-8"))
