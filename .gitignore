@@ -1,1 +1,5 @@
 .env
+*.mp3
+*.wav
+*.ipynb
+testBase64
