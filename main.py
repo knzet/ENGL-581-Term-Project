@@ -8,7 +8,8 @@ import os
 import base64
 from gradio_client import Client
 
-
+global fullttsaudiofilename
+fullttsaudiofilename=""
 resumeFile = "resume.txt"
 with open(resumeFile) as f:
     resumeText = f.read()
@@ -39,8 +40,7 @@ def batch(fullText, question):
     wav_file = open(audioname, "wb")
     batches = fullText.split(".")  # split by sentence
 
-    print(client.view_api())
-    # print(client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello!", "ultra_fast", api_name="/custom"))
+    # print(client.view_api())
 
     for batch in batches:
         # call TTS on individual sentences, append to byte array
@@ -48,6 +48,8 @@ def batch(fullText, question):
 
     # write the byte array to a file
     wav_file.write(fullmp3Data)
+    wav_file.close()
+    
     return audioname
 
 
@@ -56,14 +58,16 @@ def TTS(text):
     # response = huggingfaceAPI(text)
     # encode_string = base64.b64encode(open("testBase64", "rb").read())
 
-    # print(response)
-    # print(response.choices[0].data)
 
-    encode_string = open("testBase64", "rb").read()
+    ttsaudioPath=client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello", "ultra_fast", api_name="/custom")
+    # print(ttsaudioPath)
+    # ttsaudioPath="C:\\Users\\Kenzie\\AppData\\Local\\Temp\\generatedzmm3ama_lgmhajzy.wav"
+    ttsaudio = open(ttsaudioPath, "rb").read()
 
+    # C:\Users\Kenzie\AppData\Local\Temp\generatedzmm3ama_lgmhajzy.wav
     # decode the base64 to bytes
-    decode_string = base64.b64decode(encode_string)
-    return decode_string  # response
+    # decode_string = base64.b64decode(encode_string)
+    return ttsaudio  # response
 
 
 # ChatGPT, verb. Definition: To do anything involving GPT-3. Example sentence: "I'm going to chatGPT with my friends tonight." "What are you going to chatGPT about?" "I'm going to chatGPT about how I'm going to chatGPT with my friends tonight."
@@ -111,6 +115,7 @@ class MyServer(BaseHTTPRequestHandler):
         self.wfile.write(bytes("</body></html>", "utf-8"))
 
     def do_GET(self):
+        global fullttsaudiofilename
         if self.path.find("question=") != -1:  # "submit" button adds to query string
             print("Button clicked")
             # grab the question from the url
@@ -124,15 +129,14 @@ class MyServer(BaseHTTPRequestHandler):
             # chatGpt(question)
             res = "Sample chatgpt response. This is what the chatbot said."
             # chatbot response text -> cloned voice audio
-            filename = batch(res, question)  # batch the TTS calls
-
+            fullttsaudiofilename = batch(res, question)  # batch the TTS calls
             # self.send_response(200)
             # self.send_header('Content-type', 'text/html')
 
             # self.end_headers()
             # send audio file directly to browser
             # give some info about the file
-            f = open(filename, 'rb')
+            f = open(fullttsaudiofilename, 'rb')
             st = os.fstat(f.fileno())
             length = st.st_size
             # data = f.read()
@@ -173,7 +177,7 @@ class MyServer(BaseHTTPRequestHandler):
             self.renderHTML("index.html")
 
         elif self.path == "/temp.mp3":
-            f = open("dade-sample1.wav", 'rb')
+            f = open(fullttsaudiofilename, 'rb')
             st = os.fstat(f.fileno())
             length = st.st_size
             data = f.read()
@@ -206,7 +210,7 @@ class MyServer(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     webServer = HTTPServer((hostName, serverPort), MyServer)
     print("Server started http://%s:%s" % (hostName, serverPort))
-
+    fullttsaudiofilename="temp.mp3"
     try:
         webServer.serve_forever()
     except KeyboardInterrupt:
