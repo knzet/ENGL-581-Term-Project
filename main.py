@@ -17,11 +17,11 @@ gptLimit = "Limit responses to 2 sentences."
 
 load_dotenv()  # you need to set OPENAI_API_KEY in .env
 openai.api_key = os.getenv("OPENAI_API_KEY")  # print os.env for debug
+huggingfacekey = os.getenv("HUGGINGFACE_API_KEY")  # print os.env for debug
 
 hostName = "localhost"
 serverPort = 3000
-client = Client("daw1882/tortoise")
-
+client = Client("daw1882/tortoise", hf_token=huggingfacekey)
 
 filename = "index.html"
 with open(filename) as f:
@@ -39,8 +39,8 @@ def batch(fullText, question):
     wav_file = open(audioname, "wb")
     batches = fullText.split(".")  # split by sentence
 
-    # print(client.view_api())
-    print(client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello!", "ultra_fast", api_name="/custom"))
+    print(client.view_api())
+    # print(client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello!", "ultra_fast", api_name="/custom"))
 
     for batch in batches:
         # call TTS on individual sentences, append to byte array
@@ -135,6 +135,47 @@ class MyServer(BaseHTTPRequestHandler):
             f = open(filename, 'rb')
             st = os.fstat(f.fileno())
             length = st.st_size
+            # data = f.read()
+            # self.send_response(200)
+            # self.send_header('Content-type', 'audio/mpeg')
+            # self.send_header('Content-Length', length)
+            # # self.send_header('ETag', '"{0}"'.format(md5.hexdigest()))
+            # self.send_header('Accept-Ranges', 'bytes')
+            # # self.send_header('Last-Modified', time.strftime(
+            # #     "%a %d %b %Y %H:%M:%S GMT", time.localtime(os.path.getmtime('temp.mp3'))))
+            # self.end_headers()
+            # # self.wfile.open()
+            # self.wfile.write(data)
+
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+
+            self.end_headers()
+            for line in content:
+                self.wfile.write(bytes(line, "utf-8"))
+
+            self.wfile.write(bytes("<p>Question: %s</p>" %
+                             question.replace("%3F", "?"), "utf-8"))
+            self.wfile.write(bytes("<br><marquee> %s</marquee>" %
+                             res.replace("%3F", "?"), "utf-8"))
+            self.wfile.write(bytes(
+                '<audio autoplay controls><source src="temp.mp3" type="audio/mpeg"><source src="', "utf-8"))
+            self.wfile.write(bytes('temp.mp3', "utf-8"))  # audio filename
+            self.wfile.write(bytes(
+                '" type="audio/mpeg">Your browser does not support the audio element.</audio>', "utf-8"))
+            self.wfile.write(bytes("</div", "utf-8"))
+            self.wfile.write(bytes("</body></html>", "utf-8"))
+            # # self.send_response(200)
+
+        elif self.path == "/":
+            print("index"+".html")
+            print('test')
+            self.renderHTML("index.html")
+
+        elif self.path == "/temp.mp3":
+            f = open("dade-sample1.wav", 'rb')
+            st = os.fstat(f.fileno())
+            length = st.st_size
             data = f.read()
             self.send_response(200)
             self.send_header('Content-type', 'audio/mpeg')
@@ -146,33 +187,7 @@ class MyServer(BaseHTTPRequestHandler):
             self.end_headers()
             # self.wfile.open()
             self.wfile.write(data)
-            # self.wfile.close()
-
-            # self.send_response(200)
-            # self.send_header('Content-type', 'text/html')
-
-            # self.end_headers()
-            # for line in content:
-            #     self.wfile.write(bytes(line, "utf-8"))
-
-            # self.wfile.write(bytes("<p>Question: %s</p>" %
-            #                  question.replace("%3F", "?"), "utf-8"))
-            # self.wfile.write(bytes("<br><marquee> %s</marquee>" %
-            #                  res.replace("%3F", "?"), "utf-8"))
-            # self.wfile.write(bytes(
-            #     '<audio controls><source src="temp.mp3" type="audio/mpeg"><source src="', "utf-8"))
-            # self.wfile.write(bytes(filename, "utf-8"))  # audio filename
-            # self.wfile.write(bytes(
-            #     '" type="audio/mpeg">Your browser does not support the audio element.</audio>', "utf-8"))
-            # self.wfile.write(bytes("</div", "utf-8"))
-            # self.wfile.write(bytes("</body></html>", "utf-8"))
-            # # self.send_response(200)
-
-        elif self.path == "/":
-            print("index"+".html")
-            print('test')
-            self.renderHTML("index.html")
-
+            
         elif os.path.exists(self.path.replace("/", "").replace(".html", "")+".html"):
             self.renderHTML(self.path.replace(
                 "/", "").replace(".html", "")+".html")
