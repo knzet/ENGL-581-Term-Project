@@ -6,50 +6,65 @@ import openai
 from dotenv import load_dotenv
 import os
 import base64
+from gradio_client import Client
 
+
+resumeFile = "resume.txt"
+with open(resumeFile) as f:
+    resumeText = f.read()
+
+gptLimit = "Limit responses to 2 sentences."
 
 load_dotenv()  # you need to set OPENAI_API_KEY in .env
-# print os.env
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")  # print os.env for debug
 
 hostName = "localhost"
 serverPort = 3000
-# link to test mp3 download and play
-# https://drive.google.com/file/d/1cgwNhWnP-vaHDR10mLdFBRcLVvuedG5o/view?usp=share_link
+client = Client("daw1882/tortoise")
+
 
 filename = "index.html"
 with open(filename) as f:
     content = f.readlines()
 
-def batch(fullText):
-    fullmp3Data = ''
-    wav_file = open("temp.mp3", "wb")
-    batches = fullText.split(".") # split by sentence
-    
+
+def batch(fullText, question):
+    # declare a byte array
+    fullmp3Data = bytearray()
+    # give the mp3s random filenames
+    audioname = question+"_"+fullText+".mp3"
+
+    # str(int(time.time() % 10000))+".mp3"
+    # open file in write byte mode
+    wav_file = open(audioname, "wb")
+    batches = fullText.split(".")  # split by sentence
+
+    # print(client.view_api())
+    print(client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello!", "ultra_fast", api_name="/custom"))
+
     for batch in batches:
-        # call TTS on individual sentences
-        fullmp3Data+=TTS(batch)
-        
+        # call TTS on individual sentences, append to byte array
+        fullmp3Data.extend(TTS(batch))
+
+    # write the byte array to a file
     wav_file.write(fullmp3Data)
-    return "temp.mp3"
+    return audioname
 
 
 def TTS(text):
-    # send a request to the hugging face API
+    # TODO: send a request to the hugging face API
     # response = huggingfaceAPI(text)
     # encode_string = base64.b64encode(open("testBase64", "rb").read())
-    encode_string = open("testBase64", "rb").read()
-    decode_string = base64.b64decode(encode_string)
 
     # print(response)
     # print(response.choices[0].data)
 
-    # parse the response
-    # response = response.choices[0].data
-    # response = response.split("Human:")[1].split("AI:")[0]
-    # print(response)
+    encode_string = open("testBase64", "rb").read()
 
+    # decode the base64 to bytes
+    decode_string = base64.b64decode(encode_string)
     return decode_string  # response
+
 
 # ChatGPT, verb. Definition: To do anything involving GPT-3. Example sentence: "I'm going to chatGPT with my friends tonight." "What are you going to chatGPT about?" "I'm going to chatGPT about how I'm going to chatGPT with my friends tonight."
 # *example sentence was chatGPTed by GPT-3
@@ -60,8 +75,8 @@ def chatGpt(message):
         model="gpt-3.5-turbo",
         messages=[
             {"role": "user",
-                "content": "I am a CS major at RIT"},  # basically, paste your resume here, might need "This is my resume:" in front
-            {"role": "user", "content": "I want you to answer questions as if you were me, using the information in my resume. Limit responses to 2 sentences."},
+                "content": resumeText},  # basically, paste your resume here, might need "This is my resume:" in front
+            {"role": "user", "content": "I want you to answer questions as if you were me, using the information in my resume."+gptLimit},
             {"role": "user",
                 "content": message},
         ]
@@ -72,11 +87,11 @@ def chatGpt(message):
 
 
 class MyServer(BaseHTTPRequestHandler):
-    def do_POST(self):
-        self.send_response(200)
-        # parsed_url = urlparse(self.path)
-        print("POST request received")
-        print(self)
+    # def do_POST(self):
+    #     self.send_response(200)
+    #     # parsed_url = urlparse(self.path)
+    #     print("POST request received")
+    #     print(self)
 
     # render a page :)
     def renderHTML(self, file):
@@ -104,12 +119,13 @@ class MyServer(BaseHTTPRequestHandler):
             question = parsed_url.query.split("question=")[1].split(
                 " ")[0].replace("%20", " ").replace("+", " ")
             print(question)
-            
+
             # input text -> chatbot response text
-            res = chatGpt(question)
+            # chatGpt(question)
+            res = "Sample chatgpt response. This is what the chatbot said."
             # chatbot response text -> cloned voice audio
-            filename = batch(res) # batch the TTS calls
-            
+            filename = batch(res, question)  # batch the TTS calls
+
             # self.send_response(200)
             # self.send_header('Content-type', 'text/html')
 
@@ -125,11 +141,13 @@ class MyServer(BaseHTTPRequestHandler):
             self.send_header('Content-Length', length)
             # self.send_header('ETag', '"{0}"'.format(md5.hexdigest()))
             self.send_header('Accept-Ranges', 'bytes')
-            self.send_header('Last-Modified', time.strftime(
-                "%a %d %b %Y %H:%M:%S GMT", time.localtime(os.path.getmtime('temp.mp3'))))
+            # self.send_header('Last-Modified', time.strftime(
+            #     "%a %d %b %Y %H:%M:%S GMT", time.localtime(os.path.getmtime('temp.mp3'))))
             self.end_headers()
+            # self.wfile.open()
             self.wfile.write(data)
-            
+            # self.wfile.close()
+
             # self.send_response(200)
             # self.send_header('Content-type', 'text/html')
 
@@ -148,9 +166,7 @@ class MyServer(BaseHTTPRequestHandler):
             #     '" type="audio/mpeg">Your browser does not support the audio element.</audio>', "utf-8"))
             # self.wfile.write(bytes("</div", "utf-8"))
             # self.wfile.write(bytes("</body></html>", "utf-8"))
-
-
-
+            # # self.send_response(200)
 
         elif self.path == "/":
             print("index"+".html")
