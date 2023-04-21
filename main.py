@@ -52,21 +52,13 @@ def batch(fullText, question):
     
     return audioname
 
-
+# ask nicely for text to be converted into voice cloned speech
+# wait a while for the response
 def TTS(text):
-    # TODO: send a request to the hugging face API
-    # response = huggingfaceAPI(text)
-    # encode_string = base64.b64encode(open("testBase64", "rb").read())
-
-
-    ttsaudioPath=client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello", "ultra_fast", api_name="/custom")
+    # ttsaudioPath=client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello", "ultra_fast", api_name="/custom")
     # print(ttsaudioPath)
-    # ttsaudioPath="C:\\Users\\Kenzie\\AppData\\Local\\Temp\\generatedzmm3ama_lgmhajzy.wav"
+    ttsaudioPath="./dade-sample1.wav"
     ttsaudio = open(ttsaudioPath, "rb").read()
-
-    # C:\Users\Kenzie\AppData\Local\Temp\generatedzmm3ama_lgmhajzy.wav
-    # decode the base64 to bytes
-    # decode_string = base64.b64decode(encode_string)
     return ttsaudio  # response
 
 
@@ -130,26 +122,11 @@ class MyServer(BaseHTTPRequestHandler):
             res = "Sample chatgpt response. This is what the chatbot said."
             # chatbot response text -> cloned voice audio
             fullttsaudiofilename = batch(res, question)  # batch the TTS calls
-            # self.send_response(200)
-            # self.send_header('Content-type', 'text/html')
 
-            # self.end_headers()
-            # send audio file directly to browser
             # give some info about the file
-            f = open(fullttsaudiofilename, 'rb')
-            st = os.fstat(f.fileno())
-            length = st.st_size
-            # data = f.read()
-            # self.send_response(200)
-            # self.send_header('Content-type', 'audio/mpeg')
-            # self.send_header('Content-Length', length)
-            # # self.send_header('ETag', '"{0}"'.format(md5.hexdigest()))
-            # self.send_header('Accept-Ranges', 'bytes')
-            # # self.send_header('Last-Modified', time.strftime(
-            # #     "%a %d %b %Y %H:%M:%S GMT", time.localtime(os.path.getmtime('temp.mp3'))))
-            # self.end_headers()
-            # # self.wfile.open()
-            # self.wfile.write(data)
+            # f = open(fullttsaudiofilename, 'rb')
+            # st = os.fstat(f.fileno())
+            # length = st.st_size
 
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
@@ -158,9 +135,9 @@ class MyServer(BaseHTTPRequestHandler):
             for line in content:
                 self.wfile.write(bytes(line, "utf-8"))
 
-            self.wfile.write(bytes("<p>Question: %s</p>" %
+            self.wfile.write(bytes("<div class=\"question\">Question: %s</div>" %
                              question.replace("%3F", "?"), "utf-8"))
-            self.wfile.write(bytes("<br><marquee> %s</marquee>" %
+            self.wfile.write(bytes("<br><div class=\"response\"> %s</div>" %
                              res.replace("%3F", "?"), "utf-8"))
             self.wfile.write(bytes(
                 '<audio autoplay controls><source src="temp.mp3" type="audio/mpeg"><source src="', "utf-8"))
@@ -191,6 +168,11 @@ class MyServer(BaseHTTPRequestHandler):
             self.end_headers()
             # self.wfile.open()
             self.wfile.write(data)
+            
+        elif self.path == "/styles.css":
+            self.send_response(200)
+            stylesheet=open("styles.css", "rb")
+            self.wfile.write(stylesheet.read())                
             
         elif os.path.exists(self.path.replace("/", "").replace(".html", "")+".html"):
             self.renderHTML(self.path.replace(

@@ -1,0 +1,25 @@
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
+div.question {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-size: x-large;
+    width: 100%;
+}
+div.response {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-size: x-large;
+    align-self: flex-end;
+}
+audio {
+    padding:20px;
+}
