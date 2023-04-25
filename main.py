@@ -33,9 +33,8 @@ def batch(fullText, question):
     # declare a byte array
     fullmp3Data = bytearray()
     # give the mp3s random filenames
-    audioname = question+"_"+fullText+".mp3"
+    audioname = question+"_"+".mp3"
 
-    # str(int(time.time() % 10000))+".mp3"
     # open file in write byte mode
     wav_file = open(audioname, "wb")
     batches = fullText.split(".")  # split by sentence
@@ -55,9 +54,9 @@ def batch(fullText, question):
 # ask nicely for text to be converted into voice cloned speech
 # wait a while for the response
 def TTS(text):
-    # ttsaudioPath=client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, "Hello", "ultra_fast", api_name="/custom")
-    # print(ttsaudioPath)
-    ttsaudioPath="./dade-sample1.wav"
+    ttsaudioPath=client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, text, "ultra_fast", api_name="/custom")
+    print(ttsaudioPath)
+    # ttsaudioPath="./dade-sample1.wav"
     ttsaudio = open(ttsaudioPath, "rb").read()
     return ttsaudio  # response
 
@@ -112,21 +111,18 @@ class MyServer(BaseHTTPRequestHandler):
             print("Button clicked")
             # grab the question from the url
             parsed_url = urlparse(self.path)
-            # print(parsed_url.query)
+            # translate the url speak into english
+            # ?question=what+is+the+meaning+of+life%3F HTTP/1.1
+            # ->  what is the meaning of life?
             question = parsed_url.query.split("question=")[1].split(
                 " ")[0].replace("%20", " ").replace("+", " ")
             print(question)
 
             # input text -> chatbot response text
-            # chatGpt(question)
-            res = "Sample chatgpt response. This is what the chatbot said."
+            res=chatGpt(question)
+            # res = "Sample chatgpt response. This is what the chatbot said."
             # chatbot response text -> cloned voice audio
             fullttsaudiofilename = batch(res, question)  # batch the TTS calls
-
-            # give some info about the file
-            # f = open(fullttsaudiofilename, 'rb')
-            # st = os.fstat(f.fileno())
-            # length = st.st_size
 
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
@@ -161,12 +157,8 @@ class MyServer(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'audio/mpeg')
             self.send_header('Content-Length', length)
-            # self.send_header('ETag', '"{0}"'.format(md5.hexdigest()))
             self.send_header('Accept-Ranges', 'bytes')
-            # self.send_header('Last-Modified', time.strftime(
-            #     "%a %d %b %Y %H:%M:%S GMT", time.localtime(os.path.getmtime('temp.mp3'))))
             self.end_headers()
-            # self.wfile.open()
             self.wfile.write(data)
             
         elif self.path == "/styles.css":
