@@ -55,7 +55,7 @@ def batch(fullText, question):
 # wait a while for the response
 def TTS(text):
     ttsaudioPath=client.predict(["dade-sample1.wav", "dade-sample2.wav"], False, text, "ultra_fast", api_name="/custom")
-    print(ttsaudioPath)
+    # print(ttsaudioPath)
     # ttsaudioPath="./dade-sample1.wav"
     ttsaudio = open(ttsaudioPath, "rb").read()
     return ttsaudio  # response
@@ -74,8 +74,9 @@ def chatGpt(message):
             {"role": "user", "content": "I want you to answer questions as if you were me, using the information in my resume."+gptLimit},
             {"role": "user",
                 "content": message},
-        ]
-    )
+        ],
+        temperature=0.2
+    )#temp =1
     print(response)
     print(response.choices[0].message.content)
     return response.choices[0].message.content
